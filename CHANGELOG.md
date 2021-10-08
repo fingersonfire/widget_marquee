@@ -1,3 +1,3 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Created marquee widget for animate scrolling horizontally and looping
