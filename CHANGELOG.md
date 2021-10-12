@@ -14,3 +14,7 @@
 ## 0.0.4
 
 * Corrected README
+
+## 0.0.5
+
+* Fixed call to onScrollingTap function

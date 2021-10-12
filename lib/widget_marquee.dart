@@ -156,7 +156,7 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
         return GestureDetector(
           onTap: () async {
             if (isScrolling) {
-              await _onScrollingTap();
+              await widget.onScrollingTap();
             }
           },
           child: Container(
