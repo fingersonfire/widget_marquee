@@ -9,3 +9,4 @@
 ## 0.0.3
 
 * Added option to animate by pixels per second instead of a set time
+* Added function for tapping on scrolling marquee
