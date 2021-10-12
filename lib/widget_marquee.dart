@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 /// [gap] - Spacing to add between widget end and start
 /// [loopDuration] - Time for one full rotation of the child
 /// [onLoopFinish] - Function to run upon finishing each loop
+/// [pixelsPerSecond] - Alternate to loop duration
 class Marquee extends StatelessWidget {
   const Marquee({
     Key? key,
@@ -18,6 +19,7 @@ class Marquee extends StatelessWidget {
     this.gap = 50,
     this.loopDuration = const Duration(milliseconds: 8000),
     this.onLoopFinish = _onLoopFinish,
+    this.pixelsPerSecond = 0,
   }) : super(key: key);
 
   final Widget child;
@@ -25,16 +27,18 @@ class Marquee extends StatelessWidget {
   final double gap;
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
+  final int pixelsPerSecond;
 
   @override
   Widget build(BuildContext context) {
     return _Marquee(
       key: UniqueKey(),
       child: child,
-      delayDuration: delayDuration,
+      delay: delayDuration,
       gap: gap,
       loopDuration: loopDuration,
       onLoopFinish: onLoopFinish,
+      pps: pixelsPerSecond,
     );
   }
 }
@@ -43,17 +47,19 @@ class _Marquee extends StatefulWidget {
   const _Marquee({
     required Key key,
     required this.child,
-    required this.delayDuration,
+    required this.delay,
     required this.gap,
     required this.loopDuration,
     required this.onLoopFinish,
+    required this.pps,
   }) : super(key: key);
 
   final Widget child;
-  final Duration delayDuration;
+  final Duration delay;
   final double gap;
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
+  final int pps;
 
   @override
   _MarqueeState createState() => _MarqueeState();
@@ -73,40 +79,57 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
   void didChangeDependencies() {
     widgets = <Widget>[widget.child];
 
+    // Initialize the scroll controller
     scrollController = ScrollController(
       initialScrollOffset: 0.0,
       keepScrollOffset: false,
     );
-    WidgetsBinding.instance?.addPostFrameCallback(scroll);
 
+    WidgetsBinding.instance?.addPostFrameCallback(scroll);
     super.didChangeDependencies();
   }
 
   void scroll(_) async {
     if (scrollController.position.maxScrollExtent > 0) {
+      late Duration duration;
       final double initMax = scrollController.position.maxScrollExtent;
 
+      // Add a sized box and duplicate widget to the row
       setState(() {
         widgets.add(SizedBox(width: widget.gap));
         widgets.add(widget.child);
       });
 
-      await Future<dynamic>.delayed(widget.delayDuration);
+      await Future<dynamic>.delayed(widget.delay);
 
-      while (scrollController.hasClients) {
-        final scrollExtent =
-            (initMax * 2) - (initMax - contentArea) + widget.gap;
-        try {
+      try {
+        while (scrollController.hasClients) {
+          // Calculate the position where the duplicate widget lines up with the original
+          final scrollExtent =
+              (initMax * 2) - (initMax - contentArea) + widget.gap;
+
+          // Set the duration of the animation
+          if (widget.pps <= 0) {
+            duration = widget.loopDuration;
+          } else {
+            duration = Duration(
+              // Calculate the duration based on the pixels per second
+              milliseconds: ((scrollExtent / widget.pps) * 1000).toInt(),
+            );
+          }
+
           await scrollController.animateTo(
             scrollExtent,
-            duration: widget.loopDuration,
+            duration: duration,
             curve: Curves.linear,
           );
+
+          // Jump to the beginning of the view to imitate loop
           scrollController.jumpTo(0);
           await widget.onLoopFinish();
-        } catch (e) {
-          log('Marquee element has been updated');
         }
+      } catch (e) {
+        log('Marquee element has been disposed');
       }
     }
   }

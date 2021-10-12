@@ -13,6 +13,8 @@ and the Flutter guide for
 
 A marquee widget that loops content seamlessly in a continous animation. The marquee will only animate if the content contained in the widget extends pass the vertical edge of the screen.
 
+Note: Current limitation is that the elements being displayed are not interactable during the animation.
+
 ## Usage
 
 ```dart
@@ -24,3 +26,11 @@ Container(
     ),
 ),
 ```
+
+## Options
+
+**delayDuration**: One time delay to wait before starting the text rotation
+**gap**: Spacing to add between widget end and start
+**loopDuration**: Time for one full rotation of the child
+**onLoopFinish**: Async function to run upon finishing each loop
+**pixelsPerSecond**: Alternate to loop duration, can be used for consistant speed between differently sized child widgets
