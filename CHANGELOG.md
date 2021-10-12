@@ -10,3 +10,7 @@
 
 * Added option to animate by pixels per second instead of a set time
 * Added function for tapping on scrolling marquee
+
+## 0.0.4
+
+* Corrected README

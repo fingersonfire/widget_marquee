@@ -11,7 +11,7 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/developing-packages). 
 -->
 
-A marquee widget that loops content seamlessly in a continous animation. The marquee will only animate if the content contained in the widget extends pass the vertical edge of the screen.
+A marquee widget that loops content seamlessly in a continous animation. The marquee will only animate if the content contained in the widget extends pass the horizontal edge of the screen.
 
 Note: Current limitation is that the elements being displayed are not interactable during the animation.
 

@@ -1,6 +1,6 @@
 name: widget_marquee
 description: A marquee for animating looping through widgets horizontally
-version: 0.0.3
+version: 0.0.4
 homepage: https://github.com/StonePack/widget_marquee
 
 environment:
