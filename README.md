@@ -29,8 +29,8 @@ Container(
 
 ## Options
 
-**delayDuration**: One time delay to wait before starting the text rotation
-**gap**: Spacing to add between widget end and start
-**loopDuration**: Time for one full rotation of the child
-**onLoopFinish**: Async function to run upon finishing each loop
-**pixelsPerSecond**: Alternate to loop duration, can be used for consistant speed between differently sized child widgets
+**delayDuration**: One time delay to wait before starting the text rotation  
+**gap**: Spacing to add between widget end and start  
+**loopDuration**: Time for one full rotation of the child  
+**onLoopFinish**: Async function to run upon finishing each loop  
+**pixelsPerSecond**: Alternate to loop duration, can be used for consistant speed between differently sized child widgets  
