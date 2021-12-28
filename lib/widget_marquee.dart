@@ -21,7 +21,9 @@ class Marquee extends StatelessWidget {
     this.loopDuration = const Duration(milliseconds: 8000),
     this.onLoopFinish = _onLoopFinish,
     this.onScrollingTap = _onScrollingTap,
+    this.onTap = _onTap,
     this.pixelsPerSecond = 0,
+    this.isStatic = false,
   }) : super(key: key);
 
   final Widget child;
@@ -30,18 +32,21 @@ class Marquee extends StatelessWidget {
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
   final Future<void> Function() onScrollingTap;
+  final Future<void> Function() onTap;
   final int pixelsPerSecond;
+  final bool isStatic;
 
   @override
   Widget build(BuildContext context) {
     return _Marquee(
-      key: UniqueKey(),
+      key: isStatic ? null : UniqueKey(),
       child: child,
       delay: delayDuration,
       gap: gap,
       loopDuration: loopDuration,
       onLoopFinish: onLoopFinish,
       onScrollingTap: onScrollingTap,
+      onTap: onTap,
       pps: pixelsPerSecond,
     );
   }
@@ -49,13 +54,14 @@ class Marquee extends StatelessWidget {
 
 class _Marquee extends StatefulWidget {
   const _Marquee({
-    required Key key,
+    Key? key,
     required this.child,
     required this.delay,
     required this.gap,
     required this.loopDuration,
     required this.onLoopFinish,
     required this.onScrollingTap,
+    required this.onTap,
     required this.pps,
   }) : super(key: key);
 
@@ -65,6 +71,7 @@ class _Marquee extends StatefulWidget {
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
   final Future<void> Function() onScrollingTap;
+  final Future<void> Function() onTap;
   final int pps;
 
   @override
@@ -84,7 +91,9 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
 
   @override
   void didChangeDependencies() {
-    widgets = <Widget>[widget.child];
+    setState(() {
+      widgets = <Widget>[widget.child];
+    });
 
     // Initialize the scroll controller
     scrollController = ScrollController(
@@ -157,18 +166,18 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
           onTap: () async {
             if (isScrolling) {
               await widget.onScrollingTap();
+            } else {
+              await widget.onTap();
             }
           },
-          child: Container(
-            alignment: Alignment.center,
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Row(
-                children: widgets,
-              ),
-              scrollDirection: Axis.horizontal,
-              controller: scrollController,
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: widgets,
             ),
+            scrollDirection: Axis.horizontal,
+            controller: scrollController,
           ),
         );
       },
@@ -187,3 +196,5 @@ Future<void> _onLoopFinish() async {}
 Future<void> _onScrollingTap() async {
   log('Marquee onScrollingTap function triggered');
 }
+
+Future<void> _onTap() async {}
