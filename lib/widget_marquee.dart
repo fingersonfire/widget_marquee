@@ -20,8 +20,8 @@ class Marquee extends StatelessWidget {
     this.gap = 50,
     this.loopDuration = const Duration(milliseconds: 8000),
     this.onLoopFinish = _onLoopFinish,
-    this.onScrollingTap = _onScrollingTap,
-    this.onTap = _onTap,
+    this.onScrollingTap,
+    this.onTap,
     this.pixelsPerSecond = 0,
     this.isStatic = false,
   }) : super(key: key);
@@ -31,8 +31,8 @@ class Marquee extends StatelessWidget {
   final double gap;
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
-  final Future<void> Function() onScrollingTap;
-  final Future<void> Function() onTap;
+  final Future<void> Function()? onScrollingTap;
+  final Future<void> Function()? onTap;
   final int pixelsPerSecond;
   final bool isStatic;
 
@@ -70,8 +70,8 @@ class _Marquee extends StatefulWidget {
   final double gap;
   final Duration loopDuration;
   final Future<void> Function() onLoopFinish;
-  final Future<void> Function() onScrollingTap;
-  final Future<void> Function() onTap;
+  final Future<void> Function()? onScrollingTap;
+  final Future<void> Function()? onTap;
   final int pps;
 
   @override
@@ -162,15 +162,27 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
 
         // Thanks to how widgets work, the gesture detector is only triggered
         // if there's nothing clickable in the child
-        return GestureDetector(
-          onTap: () async {
-            if (isScrolling) {
-              await widget.onScrollingTap();
-            } else {
-              await widget.onTap();
-            }
-          },
-          child: SingleChildScrollView(
+        if (widget.onTap != null || widget.onScrollingTap != null) {
+          return GestureDetector(
+            onTap: () async {
+              if (isScrolling) {
+                await widget.onScrollingTap!();
+              } else {
+                await widget.onTap!();
+              }
+            },
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: widgets,
+              ),
+              scrollDirection: Axis.horizontal,
+              controller: scrollController,
+            ),
+          );
+        } else {
+          return SingleChildScrollView(
             physics: const NeverScrollableScrollPhysics(),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -178,8 +190,8 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
             ),
             scrollDirection: Axis.horizontal,
             controller: scrollController,
-          ),
-        );
+          );
+        }
       },
     );
   }
@@ -192,9 +204,3 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
 }
 
 Future<void> _onLoopFinish() async {}
-
-Future<void> _onScrollingTap() async {
-  log('Marquee onScrollingTap function triggered');
-}
-
-Future<void> _onTap() async {}
