@@ -5,148 +5,116 @@ import 'package:flutter/material.dart';
 
 /// Rotates the [child] widget indefinitely along the horizontal axis if the
 /// content extends pass the edge of the render area.
-///
-/// [delayDuration] - One time delay to wait before starting the text rotation
-/// [gap] - Spacing to add between widget end and start
-/// [loopDuration] - Time for one full rotation of the child
-/// [onLoopFinish] - Function to run upon finishing each loop
-/// [onScrollingTap]
-/// [pixelsPerSecond] - Alternate to loop duration
-class Marquee extends StatelessWidget {
+class Marquee extends StatefulWidget {
   const Marquee({
     Key? key,
     required this.child,
     this.delayDuration = const Duration(milliseconds: 1500),
     this.gap = 50,
     this.loopDuration = const Duration(milliseconds: 8000),
-    this.onLoopFinish = _onLoopFinish,
+    this.loopPause = 5000,
     this.onScrollingTap,
     this.onTap,
     this.pixelsPerSecond = 0,
-    this.isStatic = false,
   }) : super(key: key);
 
   final Widget child;
+
+  /// [delayDuration] - One time delay to wait before starting the text rotation
   final Duration delayDuration;
+
+  /// [gap] - Spacing to add between widget end and start
   final double gap;
+
+  /// [loopDuration] - Time for one full rotation of the child
   final Duration loopDuration;
-  final Future<void> Function() onLoopFinish;
+
+  /// [loopPause] - Time to wait after each rotation before next
+  final int loopPause;
   final Future<void> Function()? onScrollingTap;
   final Future<void> Function()? onTap;
+
+  /// [pixelsPerSecond] - Alternate to loop duration
   final int pixelsPerSecond;
-  final bool isStatic;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Marquee(
-      key: isStatic ? null : UniqueKey(),
-      child: child,
-      delay: delayDuration,
-      gap: gap,
-      loopDuration: loopDuration,
-      onLoopFinish: onLoopFinish,
-      onScrollingTap: onScrollingTap,
-      onTap: onTap,
-      pps: pixelsPerSecond,
-    );
-  }
-}
-
-class _Marquee extends StatefulWidget {
-  const _Marquee({
-    Key? key,
-    required this.child,
-    required this.delay,
-    required this.gap,
-    required this.loopDuration,
-    required this.onLoopFinish,
-    required this.onScrollingTap,
-    required this.onTap,
-    required this.pps,
-  }) : super(key: key);
-
-  final Widget child;
-  final Duration delay;
-  final double gap;
-  final Duration loopDuration;
-  final Future<void> Function() onLoopFinish;
-  final Future<void> Function()? onScrollingTap;
-  final Future<void> Function()? onTap;
-  final int pps;
 
   @override
   _MarqueeState createState() => _MarqueeState();
 }
 
-class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
+class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
   late double contentArea;
   bool isScrolling = false;
-  late ScrollController scrollController;
+  ScrollController? scrollController;
   List<Widget> widgets = <Widget>[];
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    setState(() {
+  void didUpdateWidget(dynamic oldWidget) {
+    if (widgets.isEmpty || widget.child.toString() != widgets[0].toString()) {
+      isScrolling = false;
       widgets = <Widget>[widget.child];
-    });
 
-    // Initialize the scroll controller
-    scrollController = ScrollController(
-      initialScrollOffset: 0.0,
-      keepScrollOffset: false,
-    );
+      scrollController?.jumpTo(0);
+      scrollController?.dispose();
 
-    WidgetsBinding.instance?.addPostFrameCallback(scroll);
-    super.didChangeDependencies();
+      scrollController = ScrollController(
+        initialScrollOffset: 0.0,
+        keepScrollOffset: false,
+      );
+
+      WidgetsBinding.instance?.addPostFrameCallback(scroll);
+    }
+
+    super.didUpdateWidget(oldWidget);
   }
 
   void scroll(_) async {
-    if (scrollController.position.maxScrollExtent > 0) {
-      late Duration duration;
-      final double initMax = scrollController.position.maxScrollExtent;
+    if ((scrollController?.position.maxScrollExtent ?? 0) > 0) {
+      Duration duration;
+      final double initMax = scrollController!.position.maxScrollExtent;
 
       // Add a sized box and duplicate widget to the row
-      setState(() {
-        widgets.add(SizedBox(width: widget.gap));
-        widgets.add(widget.child);
-      });
+      widgets.add(SizedBox(width: widget.gap));
+      widgets.add(widget.child);
 
-      await Future<dynamic>.delayed(widget.delay);
+      await Future<dynamic>.delayed(widget.delayDuration);
 
       try {
         setState(() {
           isScrolling = true;
         });
 
-        while (scrollController.hasClients) {
+        while (scrollController!.hasClients && isScrolling) {
           // Calculate the position where the duplicate widget lines up with the original
-          final scrollExtent =
+          final double scrollExtent =
               (initMax * 2) - (initMax - contentArea) + widget.gap;
 
           // Set the duration of the animation
-          if (widget.pps <= 0) {
+          if (widget.pixelsPerSecond <= 0) {
             duration = widget.loopDuration;
           } else {
             duration = Duration(
               // Calculate the duration based on the pixels per second
-              milliseconds: ((scrollExtent / widget.pps) * 1000).toInt(),
+              milliseconds:
+                  ((scrollExtent / widget.pixelsPerSecond) * 1000).toInt(),
             );
           }
 
-          await scrollController.animateTo(
+          await scrollController!.animateTo(
             scrollExtent,
             duration: duration,
             curve: Curves.linear,
           );
 
           // Jump to the beginning of the view to imitate loop
-          scrollController.jumpTo(0);
-          await widget.onLoopFinish();
+          scrollController!.jumpTo(0);
+
+          int finishTime =
+              DateTime.now().millisecondsSinceEpoch + widget.loopPause;
+
+          while (DateTime.now().millisecondsSinceEpoch < finishTime &&
+              isScrolling) {
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
         }
       } catch (e) {
         log('Marquee element has been disposed');
@@ -198,9 +166,7 @@ class _MarqueeState extends State<_Marquee> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    scrollController.dispose();
+    scrollController?.dispose();
     super.dispose();
   }
 }
-
-Future<void> _onLoopFinish() async {}
