@@ -16,6 +16,7 @@ class Marquee extends StatefulWidget {
     this.onScrollingTap,
     this.onTap,
     this.pixelsPerSecond = 0,
+    this.uniqueId = '',
   }) : super(key: key);
 
   final Widget child;
@@ -36,6 +37,7 @@ class Marquee extends StatefulWidget {
 
   /// [pixelsPerSecond] - Alternate to loop duration
   final int pixelsPerSecond;
+  final String uniqueId;
 
   @override
   _MarqueeState createState() => _MarqueeState();
@@ -43,13 +45,18 @@ class Marquee extends StatefulWidget {
 
 class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
   late double contentArea;
+
   bool isScrolling = false;
   ScrollController? scrollController;
   List<Widget> widgets = <Widget>[];
+  String uniqueId = '';
 
   @override
   void didUpdateWidget(dynamic oldWidget) {
-    if (widgets.isEmpty || widget.child.toString() != widgets[0].toString()) {
+    if (widgets.isEmpty ||
+        widget.child.toString() != widgets[0].toString() ||
+        widget.uniqueId != uniqueId) {
+      uniqueId = widget.uniqueId;
       isScrolling = false;
       widgets = <Widget>[widget.child];
 
