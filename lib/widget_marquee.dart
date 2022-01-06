@@ -9,6 +9,7 @@ class Marquee extends StatefulWidget {
   const Marquee({
     Key? key,
     required this.child,
+    this.animate = true,
     this.delayDuration = const Duration(milliseconds: 1500),
     this.gap = 50,
     this.loopDuration = const Duration(milliseconds: 8000),
@@ -20,6 +21,7 @@ class Marquee extends StatefulWidget {
   }) : super(key: key);
 
   final Widget child;
+  final bool animate;
 
   /// [delayDuration] - One time delay to wait before starting the text rotation
   final Duration delayDuration;
@@ -46,6 +48,7 @@ class Marquee extends StatefulWidget {
 class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
   late double contentArea;
 
+  double initMax = 0;
   bool isScrolling = false;
   ScrollController? scrollController;
   List<Widget> widgets = <Widget>[];
@@ -68,7 +71,16 @@ class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
         keepScrollOffset: false,
       );
 
-      WidgetsBinding.instance?.addPostFrameCallback(scroll);
+      if (widget.animate) {
+        WidgetsBinding.instance?.addPostFrameCallback(scroll);
+      }
+    } else {
+      if (widget.animate && !isScrolling) {
+        WidgetsBinding.instance?.addPostFrameCallback(scroll);
+      } else if (!widget.animate && isScrolling) {
+        isScrolling = false;
+        scrollController?.jumpTo(0);
+      }
     }
 
     super.didUpdateWidget(oldWidget);
@@ -77,11 +89,14 @@ class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
   void scroll(_) async {
     if ((scrollController?.position.maxScrollExtent ?? 0) > 0) {
       Duration duration;
-      final double initMax = scrollController!.position.maxScrollExtent;
 
       // Add a sized box and duplicate widget to the row
-      widgets.add(SizedBox(width: widget.gap));
-      widgets.add(widget.child);
+      if (widgets.length == 1) {
+        initMax = scrollController!.position.maxScrollExtent;
+
+        widgets.add(SizedBox(width: widget.gap));
+        widgets.add(widget.child);
+      }
 
       await Future<dynamic>.delayed(widget.delayDuration);
 
