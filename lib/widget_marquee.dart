@@ -88,6 +88,7 @@ class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
 
   void scroll(_) async {
     if ((scrollController?.position.maxScrollExtent ?? 0) > 0) {
+      isScrolling = true;
       Duration duration;
 
       // Add a sized box and duplicate widget to the row
@@ -101,10 +102,6 @@ class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
       await Future<dynamic>.delayed(widget.delayDuration);
 
       try {
-        setState(() {
-          isScrolling = true;
-        });
-
         while (scrollController!.hasClients && isScrolling) {
           // Calculate the position where the duplicate widget lines up with the original
           final double scrollExtent =
