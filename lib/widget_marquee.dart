@@ -1,191 +1,144 @@
 library widget_marquee;
 
-import 'dart:developer';
 import 'package:flutter/material.dart';
 
-/// Rotates the [child] widget indefinitely along the horizontal axis if the
-/// content extends pass the edge of the render area.
 class Marquee extends StatefulWidget {
   const Marquee({
-    Key? key,
     required this.child,
-    this.animate = true,
-    this.delayDuration = const Duration(milliseconds: 1500),
-    this.gap = 50,
-    this.loopDuration = const Duration(milliseconds: 8000),
-    this.loopPause = 5000,
-    this.onScrollingTap,
-    this.onTap,
-    this.pixelsPerSecond = 0,
-    this.uniqueId = '',
+    Key? key,
+    this.delay = const Duration(seconds: 10),
+    this.disableAnimation = false,
+    this.duration = const Duration(seconds: 10),
+    this.gap = 25,
+    this.id,
+    this.pause = const Duration(seconds: 5),
   }) : super(key: key);
 
+  /// Widget to display in marquee
   final Widget child;
-  final bool animate;
 
-  /// [delayDuration] - One time delay to wait before starting the text rotation
-  final Duration delayDuration;
+  /// Duration to wait before starting animation
+  final Duration delay;
 
-  /// [gap] - Spacing to add between widget end and start
+  /// If animation should be stopped and position reset
+  final bool disableAnimation;
+
+  /// Duration of marquee animation
+  final Duration duration;
+
+  /// Sized between end of child and beginning of next child instance
   final double gap;
 
-  /// [loopDuration] - Time for one full rotation of the child
-  final Duration loopDuration;
+  /// Used to track widget instance and prevent rebuilding unnecessarily if parent rebuilds
+  final String? id;
 
-  /// [loopPause] - Time to wait after each rotation before next
-  final int loopPause;
-  final Future<void> Function()? onScrollingTap;
-  final Future<void> Function()? onTap;
-
-  /// [pixelsPerSecond] - Alternate to loop duration
-  final int pixelsPerSecond;
-  final String uniqueId;
+  /// Time to pause animation inbetween loops
+  final Duration pause;
 
   @override
-  _MarqueeState createState() => _MarqueeState();
+  State<Marquee> createState() => _MarqueeState();
 }
 
-class _MarqueeState extends State<Marquee> with TickerProviderStateMixin {
-  late double contentArea;
+class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
+  late final AnimationController animationController;
+  late final Animation<Offset> offset;
+  late final ScrollController scrollController;
 
-  double initMax = 0;
-  bool isScrolling = false;
-  ScrollController? scrollController;
-  List<Widget> widgets = <Widget>[];
-  String uniqueId = '';
+  String id = '';
+  bool shouldScroll = false;
 
   @override
-  void didUpdateWidget(dynamic oldWidget) {
-    if (widgets.isEmpty ||
-        widget.child.toString() != widgets[0].toString() ||
-        widget.uniqueId != uniqueId) {
-      uniqueId = widget.uniqueId;
-      isScrolling = false;
-      widgets = <Widget>[widget.child];
+  void initState() {
+    id = widget.id ?? DateTime.now().toString();
 
-      scrollController?.jumpTo(0);
-      scrollController?.dispose();
+    animationController = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
 
-      scrollController = ScrollController(
-        initialScrollOffset: 0.0,
-        keepScrollOffset: false,
-      );
+    offset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-.5, 0),
+    ).animate(animationController);
 
-      if (widget.animate) {
-        WidgetsBinding.instance?.addPostFrameCallback(scroll);
-      }
-    } else {
-      if (widget.animate && !isScrolling) {
-        WidgetsBinding.instance?.addPostFrameCallback(scroll);
-      } else if (!widget.animate && isScrolling) {
-        isScrolling = false;
-        scrollController?.jumpTo(0);
-      }
+    scrollController = ScrollController();
+
+    animationController.addListener(animationListener);
+
+    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      animationHandler();
+    });
+
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant Marquee oldWidget) {
+    id = widget.id ?? DateTime.now().toString();
+
+    if (!shouldScroll || oldWidget.id != id) {
+      animationController.reset();
+      setState(() => shouldScroll = false);
+    }
+
+    if (!widget.disableAnimation && oldWidget.id != id) {
+      WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+        animationHandler();
+      });
     }
 
     super.didUpdateWidget(oldWidget);
   }
 
-  void scroll(_) async {
-    if ((scrollController?.position.maxScrollExtent ?? 0) > 0) {
-      isScrolling = true;
-      Duration duration;
+  animationHandler() async {
+    if (scrollController.position.maxScrollExtent > 0) {
+      setState(() => shouldScroll = true);
 
-      // Add a sized box and duplicate widget to the row
-      if (widgets.length == 1) {
-        initMax = scrollController!.position.maxScrollExtent;
+      await Future.delayed(widget.delay);
+      animationController.forward();
+    }
+  }
 
-        widgets.add(SizedBox(width: widget.gap));
-        widgets.add(widget.child);
-      }
-
-      await Future<dynamic>.delayed(widget.delayDuration);
-
-      try {
-        while (scrollController!.hasClients && isScrolling) {
-          // Calculate the position where the duplicate widget lines up with the original
-          final double scrollExtent =
-              (initMax * 2) - (initMax - contentArea) + widget.gap;
-
-          // Set the duration of the animation
-          if (widget.pixelsPerSecond <= 0) {
-            duration = widget.loopDuration;
-          } else {
-            duration = Duration(
-              // Calculate the duration based on the pixels per second
-              milliseconds:
-                  ((scrollExtent / widget.pixelsPerSecond) * 1000).toInt(),
-            );
-          }
-
-          await scrollController!.animateTo(
-            scrollExtent,
-            duration: duration,
-            curve: Curves.linear,
-          );
-
-          // Jump to the beginning of the view to imitate loop
-          scrollController!.jumpTo(0);
-
-          int finishTime =
-              DateTime.now().millisecondsSinceEpoch + widget.loopPause;
-
-          while (DateTime.now().millisecondsSinceEpoch < finishTime &&
-              isScrolling) {
-            await Future.delayed(const Duration(milliseconds: 50));
-          }
-        }
-      } catch (e) {
-        log('Marquee element has been disposed');
-      }
+  animationListener() async {
+    if (animationController.status == AnimationStatus.completed) {
+      animationController.reset();
+      await Future.delayed(widget.pause);
+      animationController.forward();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        contentArea = constraints.maxWidth;
-
-        // Thanks to how widgets work, the gesture detector is only triggered
-        // if there's nothing clickable in the child
-        if (widget.onTap != null || widget.onScrollingTap != null) {
-          return GestureDetector(
-            onTap: () async {
-              if (isScrolling) {
-                await widget.onScrollingTap!();
-              } else {
-                await widget.onTap!();
-              }
-            },
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: widgets,
+    return SingleChildScrollView(
+      controller: scrollController,
+      physics: const NeverScrollableScrollPhysics(),
+      scrollDirection: Axis.horizontal,
+      child: SlideTransition(
+        position: offset,
+        child: Row(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(
+                right: shouldScroll ? widget.gap : 0,
               ),
-              scrollDirection: Axis.horizontal,
-              controller: scrollController,
+              child: widget.child,
             ),
-          );
-        } else {
-          return SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: widgets,
-            ),
-            scrollDirection: Axis.horizontal,
-            controller: scrollController,
-          );
-        }
-      },
+            if (shouldScroll)
+              Padding(
+                padding: EdgeInsets.only(
+                  right: widget.gap,
+                ),
+                child: widget.child,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   void dispose() {
-    scrollController?.dispose();
+    animationController.dispose();
     super.dispose();
   }
 }
