@@ -45,7 +45,7 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
   late final ScrollController scrollController;
 
   String id = '';
-  bool shouldScroll = false;
+  ValueNotifier<bool> shouldScroll = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -63,8 +63,6 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
 
     scrollController = ScrollController();
 
-    animationController.addListener(animationListener);
-
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
       animationHandler();
     });
@@ -76,9 +74,9 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
   void didUpdateWidget(covariant Marquee oldWidget) {
     id = widget.id ?? DateTime.now().toString();
 
-    if (!shouldScroll || oldWidget.id != id) {
+    if (!shouldScroll.value || oldWidget.id != id) {
       animationController.reset();
-      setState(() => shouldScroll = false);
+      shouldScroll.value = false;
     }
 
     if (!widget.disableAnimation && oldWidget.id != id) {
@@ -92,18 +90,20 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
 
   animationHandler() async {
     if (scrollController.position.maxScrollExtent > 0) {
-      setState(() => shouldScroll = true);
+      shouldScroll.value = true;
 
       await Future.delayed(widget.delay);
-      animationController.forward();
-    }
-  }
 
-  animationListener() async {
-    if (animationController.status == AnimationStatus.completed) {
-      animationController.reset();
-      await Future.delayed(widget.pause);
-      animationController.forward();
+      if (shouldScroll.value && mounted) {
+        animationController.forward().then((_) async {
+          animationController.reset();
+          await Future.delayed(widget.pause);
+
+          if (shouldScroll.value && mounted) {
+            animationHandler();
+          }
+        });
+      }
     }
   }
 
@@ -115,22 +115,27 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
       scrollDirection: Axis.horizontal,
       child: SlideTransition(
         position: offset,
-        child: Row(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                right: shouldScroll ? widget.gap : 0,
-              ),
-              child: widget.child,
-            ),
-            if (shouldScroll)
-              Padding(
-                padding: EdgeInsets.only(
-                  right: widget.gap,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: shouldScroll,
+          builder: (BuildContext context, bool shouldScroll, _) {
+            return Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: shouldScroll ? widget.gap : 0,
+                  ),
+                  child: widget.child,
                 ),
-                child: widget.child,
-              ),
-          ],
+                if (shouldScroll)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      right: widget.gap,
+                    ),
+                    child: widget.child,
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
