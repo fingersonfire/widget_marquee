@@ -18,3 +18,8 @@
 ## 0.0.5
 
 * Fixed call to onScrollingTap function
+
+## 0.0.7
+
+* Complete overhaul of how the marquee handles animating
+* Support for the latest Flutter SDK
