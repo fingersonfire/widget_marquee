@@ -23,3 +23,7 @@
 
 * Complete overhaul of how the marquee handles animating
 * Support for the latest Flutter SDK
+
+## 0.0.8
+
+* Updated the documentation and added an example.
