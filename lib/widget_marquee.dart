@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 
 class Marquee extends StatefulWidget {
   const Marquee({
+    super.key,
     required this.child,
-    Key? key,
     this.delay = const Duration(seconds: 10),
     this.disableAnimation = false,
     this.duration = const Duration(seconds: 10),
     this.gap = 25,
     this.id,
     this.pause = const Duration(seconds: 5),
-  }) : super(key: key);
+  });
 
   /// Widget to display in marquee
   final Widget child;
@@ -63,7 +63,7 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
 
     scrollController = ScrollController();
 
-    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       animationHandler();
     });
 
@@ -80,7 +80,7 @@ class _MarqueeState extends State<Marquee> with SingleTickerProviderStateMixin {
     }
 
     if (!widget.disableAnimation && oldWidget.id != id) {
-      WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         animationHandler();
       });
     }
