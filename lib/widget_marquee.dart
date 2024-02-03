@@ -2,6 +2,7 @@ library widget_marquee;
 
 import 'package:flutter/material.dart';
 
+/// Creates an animation that loops any [child] that is to wide to fit in the view space.
 class Marquee extends StatefulWidget {
   const Marquee({
     super.key,

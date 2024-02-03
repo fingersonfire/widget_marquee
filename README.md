@@ -21,16 +21,22 @@ Note: Current limitation is that the elements being displayed are not interactab
 Container(
     margin: const EdgeInsets.symmetric(horizontal: 20),
     child: Marquee(
+        duration: const Duration(milliseconds: 5000),
         child: Text('Very long text that bleeds out of the rendering space'),
-        loopDuration: const Duration(milliseconds: 5000),
     ),
 ),
 ```
 
-## Options
+## Parameters
 
-**delayDuration**: One time delay to wait before starting the rotation animation  
-**gap**: Spacing to add between widget end and start  
-**loopDuration**: Time for one full rotation of the child  
-**onLoopFinish**: Async function to run upon finishing each loop  
-**pixelsPerSecond**: Alternate to loop duration, can be used for consistant speed regardless of size  
+**delay**: Duration to wait before next loop.
+
+**disableAnimation**: Toggle whether or not to loop widget.
+
+**duration**: The time in order to complete a full loop.
+
+**gap**: The size between the widget end and looped widgets start.
+
+**id**: Used to track widget instance and prevent rebuilding unnecessarily if parent rebuilds.
+
+**pause**: Time to pause animation inbetween loops.
